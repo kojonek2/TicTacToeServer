@@ -1,39 +1,61 @@
 package kojonek2.tictactoeserver.common;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.IOException;
 import java.net.Socket;
 
 public class ClientConnection implements Runnable {
 
+	Object lock1 = new Object();
+	private boolean connectionEnded;
+	
 	private Socket clientSocket;
 	private ServerMain mainServer;
+	
+	Thread clientConnectionThread;
+	
+	WritingQueue toSendQueue;
 
 	public ClientConnection(Socket socket, ServerMain mainServer) {
 		clientSocket = socket;
 		this.mainServer = mainServer;
+		toSendQueue = new WritingQueue();
+		connectionEnded = false;
 	}
 
 	@Override
 	public void run() {
-		try (
-				PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-				BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
-		) {
-			String inputLine;
-			out.println("Connected");
-			while ((inputLine = in.readLine()) != null) {
-				System.out.println(inputLine);
+		clientConnectionThread = Thread.currentThread();
+		
+		new Thread(new SocketReaderServer(clientSocket, this)).start();
+		new Thread(new SocketWriterServer(clientSocket, this)).start();
+		
+		toSendQueue.put("Connected");
+	}
+	
+	void connectionEnded() {
+		synchronized (lock1) {
+			if(!connectionEnded) {
+				mainServer.connections.remove(clientConnectionThread);
+				System.out.println("active connections:" + mainServer.connections.size());
+				connectionEnded = true;
+				try {
+					clientSocket.close();
+					System.out.println("closing conection");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
-
-		} catch (Exception e) {
-			System.err.println("Error during connection with client");
-			e.printStackTrace();
-		} finally {
-			mainServer.connections.remove(Thread.currentThread());
-			System.out.println("active connections:" + mainServer.connections.size());
 		}
+	}
+	
+	boolean isConnectionEnded() {
+		synchronized (lock1) {
+			return connectionEnded;
+		}
+	}
+	
+	synchronized void processInput(String input) {
+		System.out.println(input);
 	}
 
 }
