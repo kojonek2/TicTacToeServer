@@ -6,10 +6,10 @@ import java.net.Socket;
 
 public class SocketWriterServer implements Runnable {
 	
-	private ClientConnection clientConnection;
+	private ConnectionToClient clientConnection;
 	private PrintWriter out;
 
-	public SocketWriterServer(Socket clientSocket, ClientConnection clientConnection) {
+	public SocketWriterServer(Socket clientSocket, ConnectionToClient clientConnection) {
 		try {
 			out = new PrintWriter(clientSocket.getOutputStream(), true);
 		} catch (IOException e) {

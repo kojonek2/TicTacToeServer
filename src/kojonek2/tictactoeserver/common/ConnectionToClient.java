@@ -2,8 +2,11 @@ package kojonek2.tictactoeserver.common;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.Timer;
+import java.util.TimerTask;
 
-public class ClientConnection implements Runnable {
+public class ConnectionToClient implements Runnable {
 
 	Object lock1 = new Object();
 	private boolean connectionEnded;
@@ -11,25 +14,41 @@ public class ClientConnection implements Runnable {
 	private Socket clientSocket;
 	private ServerMain mainServer;
 	
+	Timer pingTimer;
+	
 	Thread clientConnectionThread;
 	
 	WritingQueue toSendQueue;
 
-	public ClientConnection(Socket socket, ServerMain mainServer) {
+	public ConnectionToClient(Socket socket, ServerMain mainServer) {
 		clientSocket = socket;
+		try {
+			clientSocket.setSoTimeout(10000);
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
 		this.mainServer = mainServer;
 		toSendQueue = new WritingQueue();
 		connectionEnded = false;
+		pingTimer = new Timer();
 	}
 
 	@Override
 	public void run() {
+		toSendQueue.put("Connected");
+		
 		clientConnectionThread = Thread.currentThread();
 		
 		new Thread(new SocketReaderServer(clientSocket, this)).start();
 		new Thread(new SocketWriterServer(clientSocket, this)).start();
 		
-		toSendQueue.put("Connected");
+		TimerTask task = new TimerTask() {
+			@Override
+			public void run() {
+				toSendQueue.put("ping");
+			}
+		};
+		pingTimer.scheduleAtFixedRate(task, 4000, 4000);
 	}
 	
 	void connectionEnded() {
@@ -40,7 +59,6 @@ public class ClientConnection implements Runnable {
 				connectionEnded = true;
 				try {
 					clientSocket.close();
-					System.out.println("closing conection");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

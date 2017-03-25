@@ -7,11 +7,11 @@ import java.net.Socket;
 
 public class SocketReaderServer implements Runnable {
 	
-	private ClientConnection clientConnection;
+	private ConnectionToClient clientConnection;
 	private BufferedReader in;
 	Socket clientSocket;
 
-	public SocketReaderServer(Socket clientSocket, ClientConnection clientConnection) {
+	public SocketReaderServer(Socket clientSocket, ConnectionToClient clientConnection) {
 		try {
 			in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 		} catch (IOException e) {
@@ -30,7 +30,7 @@ public class SocketReaderServer implements Runnable {
 				clientConnection.processInput(inputLine);
 			}
 		} catch (IOException e) {
-			System.err.println("Error during reading inputStream");
+			//System.err.println("Error during reading inputStream");
 			//e.printStackTrace();
 			//ignore this exception. Probably client closed unexpectedly
 		} finally {
