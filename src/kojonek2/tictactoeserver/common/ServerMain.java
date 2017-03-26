@@ -19,7 +19,8 @@ public class ServerMain {
 			while (true) {
 				System.out.println("active connections:" + connections.size());
 				Socket clientSocket = serverSocket.accept();
-				Thread thread = new Thread(new ConnectionToClient(clientSocket, this));
+				ConnectionToClient runnable = new ConnectionToClient(clientSocket, this);
+				Thread thread = new Thread(runnable);
 				connections.add(thread);
 				thread.start();
 			}
