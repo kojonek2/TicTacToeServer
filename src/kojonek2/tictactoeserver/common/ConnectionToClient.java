@@ -19,6 +19,8 @@ public class ConnectionToClient implements Runnable {
 	Thread clientConnectionThread;
 	
 	WritingQueue toSendQueue;
+	
+	int idOfConnection;
 
 	public ConnectionToClient(Socket socket, ServerMain mainServer) {
 		clientSocket = socket;
@@ -54,7 +56,7 @@ public class ConnectionToClient implements Runnable {
 	void connectionEnded() {
 		synchronized (lock1) {
 			if(!connectionEnded) {
-				mainServer.connections.remove(clientConnectionThread);
+				mainServer.removeConnection(idOfConnection, this);
 				System.out.println("active connections:" + mainServer.connections.size());
 				connectionEnded = true;
 				try {
