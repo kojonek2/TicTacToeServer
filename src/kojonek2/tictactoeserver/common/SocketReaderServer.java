@@ -34,7 +34,7 @@ public class SocketReaderServer implements Runnable {
 			//e.printStackTrace();
 			//ignore this exception. Probably client closed unexpectedly
 		} finally {
-			clientConnection.connectionEnded();
+			clientConnection.endConnection();
 		}
 	}
 	

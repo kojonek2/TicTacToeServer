@@ -36,10 +36,20 @@ public class ServerMain {
 			while (connections.containsKey(freeId)) {
 				freeId++;
 			}
-			System.out.println("Gave new id " + freeId);
+			//System.out.println("Gave new id " + freeId);
 			connections.put(freeId, connection);
 			connection.idOfConnection = freeId;
 			return freeId;
+		}
+	}
+	
+	void announceConnectionOfPlayer(int idOfConnection, String playerName) {
+		synchronized(connections) {
+			connections.forEach((id, connection) -> {
+				if(id != idOfConnection) {
+					connection.toSendQueue.put("Player:Connected:" + idOfConnection + ":" + playerName);
+				}
+			});
 		}
 	}
 	

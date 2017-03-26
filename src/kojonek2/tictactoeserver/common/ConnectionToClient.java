@@ -8,19 +8,19 @@ import java.util.TimerTask;
 
 public class ConnectionToClient implements Runnable {
 
-	Object lock1 = new Object();
+	private Object lock1 = new Object();
 	private boolean connectionEnded;
 	
 	private Socket clientSocket;
 	private ServerMain mainServer;
 	
-	Timer pingTimer;
-	
-	Thread clientConnectionThread;
-	
+	private Timer pingTimer;
+		
 	WritingQueue toSendQueue;
 	
 	int idOfConnection;
+	String playerName;
+	
 
 	public ConnectionToClient(Socket socket, ServerMain mainServer) {
 		clientSocket = socket;
@@ -37,9 +37,7 @@ public class ConnectionToClient implements Runnable {
 
 	@Override
 	public void run() {
-		toSendQueue.put("Connected");
-		
-		clientConnectionThread = Thread.currentThread();
+		toSendQueue.put("Connected:" + idOfConnection);
 		
 		new Thread(new SocketReaderServer(clientSocket, this)).start();
 		new Thread(new SocketWriterServer(clientSocket, this)).start();
@@ -53,7 +51,7 @@ public class ConnectionToClient implements Runnable {
 		pingTimer.scheduleAtFixedRate(task, 4000, 4000);
 	}
 	
-	void connectionEnded() {
+	void endConnection() {
 		synchronized (lock1) {
 			if(!connectionEnded) {
 				mainServer.removeConnection(idOfConnection, this);
@@ -79,6 +77,11 @@ public class ConnectionToClient implements Runnable {
 		switch(arguments[0]) {
 			case "ping": 
 				//ignore
+				break;
+			case "Connected":
+				playerName = input.replaceFirst("Connected:", "");
+				mainServer.announceConnectionOfPlayer(idOfConnection, playerName);
+				System.out.println(playerName + " connected with id " + idOfConnection);
 				break;
 			default:
 				System.out.println(input);
