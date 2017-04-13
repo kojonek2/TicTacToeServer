@@ -30,6 +30,26 @@ public class ServerMain {
 		}
 	}
 	
+	void announceConnectionToLobby(int idOfConnection, String playerName) {
+		synchronized(connections) {
+			connections.forEach((id, connection) -> {
+				if(id != idOfConnection) {
+					connection.toSendQueue.put("Player:Add:" + idOfConnection + ":" + playerName);
+				}
+			});
+		}
+	}
+	
+	void announceDisconnectionFromLobby(int idOfConnection) {
+		synchronized(connections) {
+			connections.forEach((id, connection) -> {
+				if(id != idOfConnection) {
+					connection.toSendQueue.put("Player:Remove:" + idOfConnection);
+				}
+			});
+		}
+	}
+	
 	int addConnection(ConnectionToClient connection) {
 		synchronized (connections) {
 			int freeId = 1;
@@ -43,18 +63,19 @@ public class ServerMain {
 		}
 	}
 	
-	void announceConnectionOfPlayer(int idOfConnection, String playerName) {
+	boolean removeConnection(int id, ConnectionToClient connection) {
+		announceDisconnectionFromLobby(id);
+		return connections.remove(id, connection);
+	}
+	
+	void sendAllPlayersInLobby(ConnectionToClient receiver) {
 		synchronized(connections) {
+			receiver.toSendQueue.put("Player:SendingAll");
 			connections.forEach((id, connection) -> {
-				if(id != idOfConnection) {
-					connection.toSendQueue.put("Player:Connected:" + idOfConnection + ":" + playerName);
+				if(id != receiver.idOfConnection) {
+					receiver.toSendQueue.put("Player:Add:" + id + ":" + connection.playerName);
 				}
 			});
 		}
 	}
-	
-	boolean removeConnection(int id, ConnectionToClient connection) {
-		return connections.remove(id, connection);
-	}
-	
 }

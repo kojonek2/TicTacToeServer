@@ -80,8 +80,14 @@ public class ConnectionToClient implements Runnable {
 				break;
 			case "Connected":
 				playerName = input.replaceFirst("Connected:", "");
-				mainServer.announceConnectionOfPlayer(idOfConnection, playerName);
+				mainServer.sendAllPlayersInLobby(this);
+				mainServer.announceConnectionToLobby(idOfConnection, playerName);
 				System.out.println(playerName + " connected with id " + idOfConnection);
+				break;
+			case "Player":
+				if(arguments[1].equals("GetAll")) {
+					mainServer.sendAllPlayersInLobby(this);
+				}
 				break;
 			default:
 				System.out.println(input);
