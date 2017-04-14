@@ -89,9 +89,26 @@ public class ConnectionToClient implements Runnable {
 					mainServer.sendAllPlayersInLobby(this);
 				}
 				break;
+			case "Invite":
+				if(arguments[1].equals("Send")) {
+					processSendInviteInput(arguments);
+				}
+				break;
 			default:
 				System.out.println(input);
 		}
+	}
+	
+	synchronized void processSendInviteInput(String[] arguments) {
+		int idOfInvitedPlayer = Integer.parseInt(arguments[2]);
+		int sizeOfGameBoard = Integer.parseInt(arguments[3]);
+		int fieldsNeededForWin = Integer.parseInt(arguments[4]);
+		FieldState thisConnectionState = FieldState.fromInt(Integer.parseInt(arguments[5]));
+		FieldState invitedPlayerState = FieldState.fromInt(Integer.parseInt(arguments[6]));
+		String query = "Invite:Send:" + idOfConnection + ":";
+		query += sizeOfGameBoard + ":" + fieldsNeededForWin + ":";
+		query += invitedPlayerState.getValue() + ":" + thisConnectionState.getValue();
+		mainServer.sendQuery(idOfInvitedPlayer, query);
 	}
 
 }

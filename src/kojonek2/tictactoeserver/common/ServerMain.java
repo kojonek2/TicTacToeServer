@@ -78,4 +78,8 @@ public class ServerMain {
 			});
 		}
 	}
+	
+	void sendQuery(int idOfTargetConnection, String query) {
+		connections.get(idOfTargetConnection).toSendQueue.put(query);
+	}
 }
