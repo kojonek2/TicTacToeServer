@@ -76,6 +76,7 @@ public class ServerMain {
 					receiver.toSendQueue.put("Player:Add:" + id + ":" + connection.playerName);
 				}
 			});
+			receiver.toSendQueue.put("Player:SentAll");
 		}
 	}
 	

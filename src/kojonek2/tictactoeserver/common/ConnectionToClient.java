@@ -3,6 +3,8 @@ package kojonek2.tictactoeserver.common;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -15,6 +17,8 @@ public class ConnectionToClient implements Runnable {
 	private ServerMain mainServer;
 	
 	private Timer pingTimer;
+	
+	private List<Invite> sentInvites;
 		
 	WritingQueue toSendQueue;
 	
@@ -23,6 +27,7 @@ public class ConnectionToClient implements Runnable {
 	
 
 	public ConnectionToClient(Socket socket, ServerMain mainServer) {
+		sentInvites = new ArrayList<Invite>();
 		clientSocket = socket;
 		try {
 			clientSocket.setSoTimeout(10000);
@@ -105,6 +110,9 @@ public class ConnectionToClient implements Runnable {
 		int fieldsNeededForWin = Integer.parseInt(arguments[4]);
 		FieldState thisConnectionState = FieldState.fromInt(Integer.parseInt(arguments[5]));
 		FieldState invitedPlayerState = FieldState.fromInt(Integer.parseInt(arguments[6]));
+		
+		sentInvites.add(new Invite(idOfInvitedPlayer, sizeOfGameBoard, fieldsNeededForWin, thisConnectionState, invitedPlayerState));
+		
 		String query = "Invite:Send:" + idOfConnection + ":";
 		query += sizeOfGameBoard + ":" + fieldsNeededForWin + ":";
 		query += invitedPlayerState.getValue() + ":" + thisConnectionState.getValue();
