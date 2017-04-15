@@ -97,6 +97,8 @@ public class ConnectionToClient implements Runnable {
 			case "Invite":
 				if(arguments[1].equals("Send")) {
 					processSendInviteInput(arguments);
+				} else if(arguments[1].equals("Cancel")) {
+					processCancellationOfInvite(arguments);
 				}
 				break;
 			default:
@@ -119,4 +121,20 @@ public class ConnectionToClient implements Runnable {
 		mainServer.sendQuery(idOfInvitedPlayer, query);
 	}
 
+	synchronized void processCancellationOfInvite(String[] arguments) {
+		int idOfPlayer = Integer.parseInt(arguments[2]);
+		Invite removed = null;
+		
+		for(int i = sentInvites.size() - 1; i >= 0; i--) {
+			if(sentInvites.get(i).getIdOfInvitedPlayer() == idOfPlayer) {
+				removed = sentInvites.remove(i);
+			}
+		}
+		
+		if(removed == null) {
+			//TODO: handle case where invite was already accepted!
+			return;
+		}
+		mainServer.sendQuery(idOfPlayer, "Invite:Cancel:" + idOfConnection);
+	}
 }
