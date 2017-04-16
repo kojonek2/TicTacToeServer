@@ -36,4 +36,12 @@ public class Invite {
 	public int getIdOfInvitedPlayer() {
 		return idOfInvitedPlayer;
 	}
+	
+	public boolean checkEquality(int sizeOfGameBoard, int fieldsNeededForWin, FieldState thisConnectionState, FieldState invitedPlayerState) {
+		if(this.sizeOfGameBoard != sizeOfGameBoard) return false;
+		if(this.fieldsNeededForWin != fieldsNeededForWin) return false;
+		if(this.thisConnectionState != thisConnectionState) return false;
+		if(this.invitedPlayerState != invitedPlayerState) return false;
+		return true;
+	}
 }

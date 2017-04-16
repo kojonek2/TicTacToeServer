@@ -83,4 +83,8 @@ public class ServerMain {
 	void sendQuery(int idOfTargetConnection, String query) {
 		connections.get(idOfTargetConnection).toSendQueue.put(query);
 	}
+	
+	Invite getInvite(int idOfSender, int idOfReceiverOfInvite) {
+		return connections.get(idOfSender).getInviteTo(idOfReceiverOfInvite);
+	}
 }

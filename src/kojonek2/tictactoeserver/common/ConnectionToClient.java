@@ -77,6 +77,15 @@ public class ConnectionToClient implements Runnable {
 		}
 	}
 	
+	synchronized Invite getInviteTo(int idOfConnection) {
+		for(int i = sentInvites.size() - 1; i >= 0; i--) {
+			if(sentInvites.get(i).getIdOfInvitedPlayer() == idOfConnection) {
+				return sentInvites.get(i);
+			}
+		}
+		return null;
+	}
+	
 	synchronized void processInput(String input) {
 		String[] arguments = input.split(":");
 		switch(arguments[0]) {
@@ -87,7 +96,7 @@ public class ConnectionToClient implements Runnable {
 				playerName = input.replaceFirst("Connected:", "");
 				mainServer.sendAllPlayersInLobby(this);
 				mainServer.announceConnectionToLobby(idOfConnection, playerName);
-				System.out.println(playerName + " connected with id " + idOfConnection);
+				//System.out.println(playerName + " connected with id " + idOfConnection);
 				break;
 			case "Player":
 				if(arguments[1].equals("GetAll")) {
@@ -99,6 +108,8 @@ public class ConnectionToClient implements Runnable {
 					processSendInviteInput(arguments);
 				} else if(arguments[1].equals("Cancel")) {
 					processCancellationOfInvite(arguments);
+				} else if(arguments[1].equals("Decline")) {
+					processDeclinationOfInvite(arguments);
 				}
 				break;
 			default:
@@ -113,6 +124,10 @@ public class ConnectionToClient implements Runnable {
 		FieldState thisConnectionState = FieldState.fromInt(Integer.parseInt(arguments[5]));
 		FieldState invitedPlayerState = FieldState.fromInt(Integer.parseInt(arguments[6]));
 		
+		Invite oldInvite = getInviteTo(idOfInvitedPlayer);
+		if(oldInvite != null) {
+			sentInvites.remove(oldInvite);
+		}
 		sentInvites.add(new Invite(idOfInvitedPlayer, sizeOfGameBoard, fieldsNeededForWin, thisConnectionState, invitedPlayerState));
 		
 		String query = "Invite:Send:" + idOfConnection + ":";
@@ -123,18 +138,38 @@ public class ConnectionToClient implements Runnable {
 
 	synchronized void processCancellationOfInvite(String[] arguments) {
 		int idOfPlayer = Integer.parseInt(arguments[2]);
-		Invite removed = null;
+		Invite toRemove = getInviteTo(idOfPlayer);
 		
-		for(int i = sentInvites.size() - 1; i >= 0; i--) {
-			if(sentInvites.get(i).getIdOfInvitedPlayer() == idOfPlayer) {
-				removed = sentInvites.remove(i);
-			}
-		}
-		
-		if(removed == null) {
-			//TODO: handle case where invite was already accepted!
+		if(toRemove == null) {
+			//TODO: handle case where invite has been already accepted or declined!
+			System.err.println("processCancellationOfInvite - invite has been already accepted or declined");
 			return;
 		}
+		sentInvites.remove(toRemove);
 		mainServer.sendQuery(idOfPlayer, "Invite:Cancel:" + idOfConnection);
 	}
+	
+	synchronized void processDeclinationOfInvite(String[] arguments) {
+		int idOfSender = Integer.parseInt(arguments[2]); //sender of invite
+		Invite invite = mainServer.getInvite(idOfSender, idOfConnection);
+		if(invite == null) {
+			//probably player canceled invite
+			System.err.println("processDeclinationOfInvite - already canceled invite");
+			return;
+		}
+		
+		int sizeOfGameBoard = Integer.parseInt(arguments[3]);
+		int fieldsNeededForWin = Integer.parseInt(arguments[4]);
+		FieldState thisConnectionState = FieldState.fromInt(Integer.parseInt(arguments[5]));
+		FieldState senderState = FieldState.fromInt(Integer.parseInt(arguments[6]));
+		//inverted order of 2 last arguments because we are checking invite send by another player
+		if(!invite.checkEquality(sizeOfGameBoard, fieldsNeededForWin, senderState, thisConnectionState)) {
+			//probably player send another invite;
+			System.err.println("processDeclinationOfInvite - already sent andother invite");
+			return;
+		}
+		sentInvites.remove(invite);
+		mainServer.sendQuery(idOfSender, "Invite:Decline:" + idOfConnection);
+	}
+	
 }
