@@ -33,7 +33,7 @@ public class ServerMain {
 	void announceConnectionToLobby(int idOfConnection, String playerName) {
 		synchronized(connections) {
 			connections.forEach((id, connection) -> {
-				if(id != idOfConnection) {
+				if(id != idOfConnection && !connection.isInGame()) {
 					connection.toSendQueue.put("Player:Add:" + idOfConnection + ":" + playerName);
 				}
 			});
@@ -43,7 +43,7 @@ public class ServerMain {
 	void announceDisconnectionFromLobby(int idOfConnection) {
 		synchronized(connections) {
 			connections.forEach((id, connection) -> {
-				if(id != idOfConnection) {
+				if(id != idOfConnection && !connection.isInGame()) {
 					connection.toSendQueue.put("Player:Remove:" + idOfConnection);
 				}
 			});
@@ -72,7 +72,7 @@ public class ServerMain {
 		synchronized(connections) {
 			receiver.toSendQueue.put("Player:SendingAll");
 			connections.forEach((id, connection) -> {
-				if(id != receiver.idOfConnection) {
+				if(id != receiver.idOfConnection && !connection.isInGame()) {
 					receiver.toSendQueue.put("Player:Add:" + id + ":" + connection.playerName);
 				}
 			});

@@ -11,6 +11,8 @@ import java.util.TimerTask;
 public class ConnectionToClient implements Runnable {
 
 	private Object lock1 = new Object();
+	private Object lock2 = new Object();
+	
 	private boolean connectionEnded;
 	
 	private Socket clientSocket;
@@ -18,6 +20,7 @@ public class ConnectionToClient implements Runnable {
 	
 	private Timer pingTimer;
 	
+	private boolean inGame;
 	private List<Invite> sentInvites;
 		
 	WritingQueue toSendQueue;
@@ -37,6 +40,7 @@ public class ConnectionToClient implements Runnable {
 		this.mainServer = mainServer;
 		toSendQueue = new WritingQueue();
 		connectionEnded = false;
+		inGame = false;
 		pingTimer = new Timer();
 	}
 
@@ -77,6 +81,12 @@ public class ConnectionToClient implements Runnable {
 		}
 	}
 	
+	public boolean isInGame() {
+		synchronized(lock2) {
+			return inGame;
+		}
+	}
+	
 	synchronized Invite getInviteTo(int idOfConnection) {
 		for(int i = sentInvites.size() - 1; i >= 0; i--) {
 			if(sentInvites.get(i).getIdOfInvitedPlayer() == idOfConnection) {
@@ -110,6 +120,8 @@ public class ConnectionToClient implements Runnable {
 					processCancellationOfInvite(arguments);
 				} else if(arguments[1].equals("Decline")) {
 					processDeclinationOfInvite(arguments);
+				} else if(arguments[1].equals("Accept")) {
+					processAcceptanceOfInvite(arguments);
 				}
 				break;
 			default:
@@ -172,4 +184,29 @@ public class ConnectionToClient implements Runnable {
 		mainServer.sendQuery(idOfSender, "Invite:Decline:" + idOfConnection);
 	}
 	
+	synchronized void processAcceptanceOfInvite(String[] arguments) {
+		int idOfSender = Integer.parseInt(arguments[2]); //sender of invite
+		Invite invite = mainServer.getInvite(idOfSender, idOfConnection);
+		if(invite == null) {
+			//probably player canceled invite
+			System.err.println("processAcceptationOfInvite - already canceled invite");
+			return;
+		}
+		int sizeOfGameBoard = Integer.parseInt(arguments[3]);
+		int fieldsNeededForWin = Integer.parseInt(arguments[4]);
+		FieldState thisConnectionState = FieldState.fromInt(Integer.parseInt(arguments[5]));
+		FieldState senderState = FieldState.fromInt(Integer.parseInt(arguments[6]));
+		//inverted order of 2 last arguments because we are checking invite send by another player
+		if(!invite.checkEquality(sizeOfGameBoard, fieldsNeededForWin, senderState, thisConnectionState)) {
+			//probably player send another invite;
+			System.err.println("processDeclinationOfInvite - already sent andother invite");
+			toSendQueue.put("Invite:RejectAcceptance");
+			return;
+		}
+		if(mainServer.connections.get(idOfSender).isInGame() || inGame) {
+			System.err.println("processDeclinationOfInvite - sender or this player is alrady in another game");
+			return;
+		}
+		//TODO Start game and send information about accepted invite!
+	}
 }
