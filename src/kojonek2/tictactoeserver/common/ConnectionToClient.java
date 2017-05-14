@@ -12,8 +12,11 @@ public class ConnectionToClient implements Runnable {
 
 	private Object lock1 = new Object();
 	private Object lock2 = new Object();
+	private Object lock3 = new Object();
 	
 	private boolean connectionEnded;
+	
+	private GameManagerServer gameManager;
 	
 	private Socket clientSocket;
 	private ServerMain mainServer;
@@ -78,6 +81,24 @@ public class ConnectionToClient implements Runnable {
 	boolean isConnectionEnded() {
 		synchronized (lock1) {
 			return connectionEnded;
+		}
+	}
+	
+	public void setInGame(boolean b) {
+		synchronized (lock2) {
+			inGame = b;
+		}
+	}
+	
+	public void setGameManager(GameManagerServer gameManager) {
+		synchronized(lock3) {
+			this.gameManager = gameManager;
+		}
+	}
+	
+	public GameManagerServer getGameManager() {
+		synchronized(lock3) {
+			return gameManager;
 		}
 	}
 	
@@ -203,10 +224,20 @@ public class ConnectionToClient implements Runnable {
 			toSendQueue.put("Invite:RejectAcceptance");
 			return;
 		}
-		if(mainServer.connections.get(idOfSender).isInGame() || inGame) {
+		if(mainServer.connections.get(idOfSender).isInGame() || isInGame()) {
 			System.err.println("processDeclinationOfInvite - sender or this player is alrady in another game");
 			return;
 		}
-		//TODO Start game and send information about accepted invite!
+		startGameWith(idOfSender, invite);
+	}
+	
+	synchronized void startGameWith(int idOfSender, Invite invite) {
+		ConnectionToClient senderConnection = mainServer.connections.get(idOfSender);
+		senderConnection.setInGame(true);
+		setInGame(true);
+		mainServer.announceDisconnectionFromLobby(idOfSender);
+		mainServer.announceDisconnectionFromLobby(idOfConnection);
+		new GameManagerServer(senderConnection, this); //constructor of GameManagerServer assigns gameManager variable
+		gameManager.startGame(invite.getSizeOfGameBoard(), invite.getFieldsNeededForWin(), invite.getThisConnectionState() , invite.getInvitedPlayerState());
 	}
 }

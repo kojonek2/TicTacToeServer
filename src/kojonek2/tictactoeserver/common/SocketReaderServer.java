@@ -27,7 +27,12 @@ public class SocketReaderServer implements Runnable {
 		String inputLine;
 		try {
 			while((inputLine = in.readLine()) != null && !clientConnection.isConnectionEnded()) {
-				clientConnection.processInput(inputLine);
+				if(inputLine.startsWith("Game")) {
+					String input = inputLine.replaceFirst("Game", Integer.toString(clientConnection.idOfConnection));
+					clientConnection.getGameManager().processInput(input);
+				} else {
+					clientConnection.processInput(inputLine);
+				}
 			}
 		} catch (IOException e) {
 			//System.err.println("Error during reading inputStream");
