@@ -226,6 +226,7 @@ public class ConnectionToClient implements Runnable {
 		}
 		if(mainServer.connections.get(idOfSender).isInGame() || isInGame()) {
 			System.err.println("processDeclinationOfInvite - sender or this player is alrady in another game");
+			toSendQueue.put("Invite:RejectAcceptance");
 			return;
 		}
 		startGameWith(idOfSender, invite);

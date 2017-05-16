@@ -71,14 +71,14 @@ public class GameManagerServer {
 		String query = "Game:Info:";
 		query += sizeOfGameBoard + ":" + fieldsNeededForWin + ":";
 		if (connectionToPlayer1.equals(receiver)) {
-			query += player1State.toString() + ":" + player2State.toString() + ":";
+			query += player1State.getValue() + ":" + player2State.getValue() + ":";
 		} else if (connectionToPlayer2.equals(receiver)) {
-			query += player2State.toString() + ":" + player1State.toString() + ":";
+			query += player2State.getValue() + ":" + player1State.getValue() + ":";
 		}  else {
 			System.err.println("GameManagerServer:sendGameInformation - player isn't in game");
 			return;
 		}
-		query += playerTurn.toString();
+		query += playerTurn.getValue();
 		receiver.toSendQueue.put(query);
 		sendFieldsInformation(receiver);		
 	}
@@ -87,9 +87,10 @@ public class GameManagerServer {
 		for (int x = 0; x < sizeOfGameBoard; x++) {
 			for (int y = 0; y < sizeOfGameBoard; y++) {
 				FieldState state = gameBoard[x][y].getState();
-				receiver.toSendQueue.put("Game:FieldsInfo:" + x + ":" + y + ":" + state.toString());
+				receiver.toSendQueue.put("Game:FieldsInfo:" + x + ":" + y + ":" + state.getValue());
 			}
 		}
+		receiver.toSendQueue.put("Game:FieldsInfoSent");
 	}
 
 	private void sendOpponentName(ConnectionToClient receiver) {
