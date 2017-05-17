@@ -38,10 +38,16 @@ public class GameManagerServer {
 				this.fieldsNeededForWin = fieldsNeededForWin;
 				setPlayersStatuses(player1State, player2State);	
 				createGameBoard(sizeOfGameBoard);
+				nextTurn();
 				sendGameInformation(connectionToPlayer1);
 				sendGameInformation(connectionToPlayer2);
 			}
 		}
+	}
+	
+	public void sendToBothPlayers(String s) {
+		connectionToPlayer1.toSendQueue.put(s);
+		connectionToPlayer2.toSendQueue.put(s);
 	}
 	
 	private void setPlayersStatuses(FieldState player1State, FieldState player2State) {
@@ -68,7 +74,8 @@ public class GameManagerServer {
 	
 	private void sendGameInformation(ConnectionToClient receiver) {
 		sendOpponentName(receiver);
-		String query = "Game:Info:";
+		receiver.toSendQueue.put("Game:Info:Sending");
+		String query = "Game:Info:Basic:";
 		query += sizeOfGameBoard + ":" + fieldsNeededForWin + ":";
 		if (connectionToPlayer1.equals(receiver)) {
 			query += player1State.getValue() + ":" + player2State.getValue() + ":";
@@ -87,10 +94,10 @@ public class GameManagerServer {
 		for (int x = 0; x < sizeOfGameBoard; x++) {
 			for (int y = 0; y < sizeOfGameBoard; y++) {
 				FieldState state = gameBoard[x][y].getState();
-				receiver.toSendQueue.put("Game:FieldsInfo:" + x + ":" + y + ":" + state.getValue());
+				receiver.toSendQueue.put("Game:Info:Fields" + x + ":" + y + ":" + state.getValue());
 			}
 		}
-		receiver.toSendQueue.put("Game:FieldsInfoSent");
+		receiver.toSendQueue.put("Game:Info:Sent");
 	}
 
 	private void sendOpponentName(ConnectionToClient receiver) {
@@ -220,13 +227,75 @@ public class GameManagerServer {
 				String[] arguments = input.split(":");
 				
 				switch (arguments[1]) {
-				case "":
-					break;
+					case "Check":
+						checkPossibleEndOfGame();
+						break;
+					case "MadeMove":
+						processMove(arguments);
+						break;
 				default:
 					System.out.println("GameMenager id of connections :" + connectionToPlayer1.idOfConnection + " and "
-							+ connectionToPlayer2.idOfConnection + "arguments" + arguments);
+							+ connectionToPlayer2.idOfConnection + "arguments:" + arguments);
 				}
 			}
 		}
+	}
+	
+	private void checkPossibleEndOfGame() {
+		FieldState winner = findWinner();
+		if (!(winner == FieldState.BLANK)) {
+			sendToBothPlayers("Game:Ended:Winner:" + winner.getValue());
+			return;
+		}
+		
+		if (getNumberOfBlankField() <= 0) {
+			sendToBothPlayers("Game:Ended:Draw");
+			return;
+		}
+	}
+	
+	private void processMove(String[] arguments) {
+		int idOfPlayer = Integer.parseInt(arguments[0]);
+		int x = Integer.parseInt(arguments[2]);
+		int y = Integer.parseInt(arguments[3]);
+		FieldState state = FieldState.fromInt(Integer.parseInt(arguments[4]));
+		
+		ConnectionToClient connectionOfSender = null; //player who sent move
+		ConnectionToClient connectionOfReceiver = null; //player who needs to get information about move
+		if(idOfPlayer == connectionToPlayer1.idOfConnection) {
+			connectionOfSender = connectionToPlayer1;
+			connectionOfReceiver = connectionToPlayer2;
+			if(player1State != state || player1State != playerTurn) {
+				sendGameInformation(connectionToPlayer1);
+				connectionToPlayer1.toSendQueue.put("Game:Info:Updated");
+				return;
+			}
+		}
+		if(idOfPlayer == connectionToPlayer2.idOfConnection) {
+			connectionOfSender = connectionToPlayer2;
+			connectionOfReceiver = connectionToPlayer1;
+			if(player2State != state || player2State != playerTurn) {
+				sendGameInformation(connectionToPlayer2);
+				connectionToPlayer2.toSendQueue.put("Game:Info:Updated");
+				return;
+			}
+		}
+		if(connectionOfSender == null || connectionOfReceiver == null) {
+			System.err.println("GameManagerServer:processMove - fatal error bad id of connection");
+		}
+		
+		Field field = gameBoard[x][y];
+		if(field == null || field.getState() != FieldState.BLANK) {
+			sendGameInformation(connectionOfSender);
+			connectionOfSender.toSendQueue.put("Game:Info:Updated");
+			return;
+		}
+		
+		field.setState(state);
+		nextTurn();
+		
+		connectionOfReceiver.toSendQueue.put("Game:Info:Fields:" + x + ":" + y + ":" + state.getValue());
+		sendToBothPlayers("Game:Info:Turn:" + playerTurn.getValue());
+		sendToBothPlayers("Game:Info:Sent");
 	}
 }

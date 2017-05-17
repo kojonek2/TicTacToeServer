@@ -24,6 +24,14 @@ public class Field {
 	public FieldState getState() {
 		return state;
 	}
+	
+	public int getX() {
+		return x;
+	}
+	
+	public int getY() {
+		return y;
+	}
 
 	// Recursive function which tells if this field and next in given direction
 	// forms long enough sequence
