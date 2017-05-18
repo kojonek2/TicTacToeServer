@@ -69,6 +69,9 @@ public class ConnectionToClient implements Runnable {
 				mainServer.removeConnection(idOfConnection, this);
 				System.out.println("active connections:" + mainServer.connections.size());
 				connectionEnded = true;
+				if(isInGame()) {
+					gameManager.endGameForOtherPlayer(this);
+				}
 				try {
 					clientSocket.close();
 				} catch (IOException e) {
@@ -125,9 +128,9 @@ public class ConnectionToClient implements Runnable {
 				break;
 			case "Connected":
 				playerName = input.replaceFirst("Connected:", "");
+				setInGame(false);
 				mainServer.sendAllPlayersInLobby(this);
 				mainServer.announceConnectionToLobby(idOfConnection, playerName);
-				//System.out.println(playerName + " connected with id " + idOfConnection);
 				break;
 			case "Player":
 				if(arguments[1].equals("GetAll")) {

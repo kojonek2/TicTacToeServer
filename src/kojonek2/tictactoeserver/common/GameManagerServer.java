@@ -45,6 +45,22 @@ public class GameManagerServer {
 		}
 	}
 	
+	public void endGameForOtherPlayer(ConnectionToClient leaver) {
+		synchronized (connectionToPlayer1) {
+			synchronized (connectionToPlayer2) {
+				if(leaver.equals(connectionToPlayer1)) {
+					connectionToPlayer2.toSendQueue.put("Game:Ended:Quit");
+					return;
+				}
+				if(leaver.equals(connectionToPlayer2)) {
+					connectionToPlayer1.toSendQueue.put("Game:Ended:Quit");
+					return;
+				}
+				System.err.println("GAmeManagerServer:endGame - there isn't player in game with this connection");
+			}
+		}
+	}
+	
 	public void sendToBothPlayers(String s) {
 		connectionToPlayer1.toSendQueue.put(s);
 		connectionToPlayer2.toSendQueue.put(s);
@@ -221,17 +237,20 @@ public class GameManagerServer {
 		return result;
 	}
 
-	public void processInput(String input) {
+	public void processInput(String input, ConnectionToClient connectionOfSender) {
 		synchronized (connectionToPlayer1) {
 			synchronized (connectionToPlayer2) {
 				String[] arguments = input.split(":");
 				
-				switch (arguments[1]) {
+				switch (arguments[0]) {
 					case "Check":
 						checkPossibleEndOfGame();
 						break;
 					case "MadeMove":
-						processMove(arguments);
+						processMove(arguments, connectionOfSender);
+						break;
+					case "Quit":
+						endGameForOtherPlayer(connectionOfSender);
 						break;
 				default:
 					System.out.println("GameMenager id of connections :" + connectionToPlayer1.idOfConnection + " and "
@@ -254,16 +273,13 @@ public class GameManagerServer {
 		}
 	}
 	
-	private void processMove(String[] arguments) {
-		int idOfPlayer = Integer.parseInt(arguments[0]);
-		int x = Integer.parseInt(arguments[2]);
-		int y = Integer.parseInt(arguments[3]);
-		FieldState state = FieldState.fromInt(Integer.parseInt(arguments[4]));
+	private void processMove(String[] arguments, ConnectionToClient connectionOfSender) {
+		int x = Integer.parseInt(arguments[1]);
+		int y = Integer.parseInt(arguments[2]);
+		FieldState state = FieldState.fromInt(Integer.parseInt(arguments[3]));
 		
-		ConnectionToClient connectionOfSender = null; //player who sent move
 		ConnectionToClient connectionOfReceiver = null; //player who needs to get information about move
-		if(idOfPlayer == connectionToPlayer1.idOfConnection) {
-			connectionOfSender = connectionToPlayer1;
+		if(connectionOfSender.equals(connectionToPlayer1)) {
 			connectionOfReceiver = connectionToPlayer2;
 			if(player1State != state || player1State != playerTurn) {
 				sendGameInformation(connectionToPlayer1);
@@ -271,8 +287,7 @@ public class GameManagerServer {
 				return;
 			}
 		}
-		if(idOfPlayer == connectionToPlayer2.idOfConnection) {
-			connectionOfSender = connectionToPlayer2;
+		if(connectionOfSender.equals(connectionToPlayer2)) {
 			connectionOfReceiver = connectionToPlayer1;
 			if(player2State != state || player2State != playerTurn) {
 				sendGameInformation(connectionToPlayer2);
@@ -281,7 +296,7 @@ public class GameManagerServer {
 			}
 		}
 		if(connectionOfSender == null || connectionOfReceiver == null) {
-			System.err.println("GameManagerServer:processMove - fatal error bad id of connection");
+			System.err.println("GameManagerServer:processMove - fatal error bad connection");
 		}
 		
 		Field field = gameBoard[x][y];

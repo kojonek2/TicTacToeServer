@@ -64,7 +64,9 @@ public class ServerMain {
 	}
 	
 	boolean removeConnection(int id, ConnectionToClient connection) {
-		announceDisconnectionFromLobby(id);
+		if(!connection.isInGame()) {
+			announceDisconnectionFromLobby(id);
+		}
 		return connections.remove(id, connection);
 	}
 	

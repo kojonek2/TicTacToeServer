@@ -28,8 +28,8 @@ public class SocketReaderServer implements Runnable {
 		try {
 			while((inputLine = in.readLine()) != null && !clientConnection.isConnectionEnded()) {
 				if(inputLine.startsWith("Game")) {
-					String input = inputLine.replaceFirst("Game", Integer.toString(clientConnection.idOfConnection));
-					clientConnection.getGameManager().processInput(input);
+					String input = inputLine.replaceFirst("Game:", "");
+					clientConnection.getGameManager().processInput(input, clientConnection);
 				} else {
 					clientConnection.processInput(inputLine);
 				}
