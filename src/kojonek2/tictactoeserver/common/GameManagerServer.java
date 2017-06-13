@@ -10,8 +10,6 @@ public class GameManagerServer {
 	private FieldState player1State;
 	private FieldState player2State;
 
-	private boolean randomPlayerSwaps = false;
-
 	private int sizeOfGameBoard;
 	private int fieldsNeededForWin;
 
@@ -68,7 +66,6 @@ public class GameManagerServer {
 	
 	private void setPlayersStatuses(FieldState player1State, FieldState player2State) {
 		if(player1State == FieldState.RANDOM && player2State == FieldState.RANDOM) {
-			randomPlayerSwaps = true;
 			boolean random = ThreadLocalRandom.current().nextBoolean();
 			if(random) {
 				this.player1State = FieldState.CIRCLE;
@@ -139,31 +136,6 @@ public class GameManagerServer {
 
 	FieldState getPlayerTurn() {
 		return playerTurn;
-	}
-
-	private void swapPlayers() {
-		FieldState temp = player1State;
-		player1State = player2State;
-		player2State = temp;
-	}
-
-	private void startNewGame() {
-		// reverting state of the all variables to state from start of the game
-		for (int x = 0; x < gameBoard.length; x++) {
-			for (int y = 0; y < gameBoard.length; y++) {
-				gameBoard[x][y].setState(FieldState.BLANK);
-			}
-		}
-
-		playerTurn = FieldState.BLANK;
-
-		if (randomPlayerSwaps) {
-			if (ThreadLocalRandom.current().nextInt(2) == 0) {
-				swapPlayers();
-			}
-		}
-
-		nextTurn();
 	}
 
 	private void nextTurn() {
