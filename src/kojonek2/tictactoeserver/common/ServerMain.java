@@ -1,5 +1,6 @@
 package kojonek2.tictactoeserver.common;
 
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collections;
@@ -11,11 +12,22 @@ public class ServerMain {
 	Map<Integer, ConnectionToClient> connections = Collections.synchronizedMap(new HashMap<Integer, ConnectionToClient>());
 	
 	public static void main(String[] args) {
-		new ServerMain(4554);
+		int port = 4554;
+		if(args.length == 1) {
+			try {
+				port = Integer.parseInt(args[0]);
+			} catch (NumberFormatException e) {
+				port = 4554;
+			}
+		} else if(args.length != 0){
+			System.out.println("Passed more than one argument which should be a port number. Setting port to 4554");
+		}
+		new ServerMain(port);
 	}
 	
 	ServerMain(int port) {
 		try (ServerSocket serverSocket = new ServerSocket(port)) {
+			System.out.println("Local adress: " + InetAddress.getLocalHost());
 			while (true) {
 				System.out.println("active connections:" + connections.size());
 				Socket clientSocket = serverSocket.accept();
